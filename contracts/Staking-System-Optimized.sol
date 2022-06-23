@@ -53,12 +53,12 @@ contract StakingSystemRequired is AccessControl, ERC721Holder, ReentrancyGuard, 
     mapping(address => Staker) public stakers;
 
     /// @notice event emitted when a user has staked a nft
-    event Staked(address owner, uint256 id);
-    event Staked(address owner, uint256 id, uint256 amount);
+    event Staked721(address owner, uint256 id);
+    event Staked1155(address owner, uint256 id, uint256 amount);
 
     /// @notice event emitted when a user has unstaked a nft
-    event Unstaked(address owner, uint256 id);
-    event Unstaked(address owner, uint256 id, uint256 amount);
+    event Unstaked721(address owner, uint256 id);
+    event Unstaked1155(address owner, uint256 id, uint256 amount);
 
     /// @notice event emitted when a user claims reward
     event RewardPaid(address indexed user, uint256 reward);
@@ -139,7 +139,7 @@ contract StakingSystemRequired is AccessControl, ERC721Holder, ReentrancyGuard, 
         staker.token[_tokenId] = info;
         staker.ownedTokens.push(_tokenId);
 
-        emit Staked(_user, _tokenId);
+        emit Staked721(_user, _tokenId);
     }
 
     function _stakeERC1155(address _user, uint256 _tokenId, uint256 _tokenAmount) private nonReentrant {
@@ -148,7 +148,7 @@ contract StakingSystemRequired is AccessControl, ERC721Holder, ReentrancyGuard, 
         ItemInfo memory info = ItemInfo(_tokenAmount,block.timestamp);
         if(staker.multiToken[_tokenId].length == 0) {staker.ownedMultiTokens.push(_tokenId);}
         staker.multiToken[_tokenId].push(info);
-        emit Staked(_user, _tokenId);
+        emit Staked1155(_user, _tokenId,_tokenAmount);
     }
     
     function unstakeERC721(uint256 tokenId) public {
@@ -159,23 +159,26 @@ contract StakingSystemRequired is AccessControl, ERC721Holder, ReentrancyGuard, 
     }
 
     function unstakeERC1155(uint256 tokenId, uint256 tokenIndex) public{
+        require(stakers[msg.sender].multiToken[tokenId].length != 0 ,"Nft Staking System: user has no nfts of this type staked");
         require(stakers[msg.sender].multiToken[tokenId][tokenIndex].amount != 0 ,"Nft Staking System: user must be the owner of the staked nft");
         require(stakingUnlock < (block.timestamp - uint(stakers[msg.sender].multiToken[tokenId][tokenIndex].timestamp)), "Staked token cannot be unstaked as minimum period has not elapsed");
         _unstakeERC1155(tokenId,tokenIndex);
     }
 
-    function batchUnstakeERC721(uint256[] memory tokenIds) private{
+    function batchUnstakeERC721(uint256[] memory tokenIds) public{
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            require(stakers[msg.sender].token[i].timestamp != 0,"Nft Staking System: user must be the owner of the staked nft");
+            require(stakers[msg.sender].token[tokenIds[i]].timestamp != 0,"Nft Staking System: user must be the owner of the staked nft");
             require(stakingUnlock < (block.timestamp - uint(stakers[msg.sender].token[tokenIds[i]].timestamp)), "Staked token cannot be unstaked as minimum period has not elapsed");
             _unstakeERC721(tokenIds[i]);
         }
     }
 
-    function batchUnstakeERC1155(uint256[] memory tokenIds, uint256[] memory tokenIndexs) private{
+    function batchUnstakeERC1155(uint256[] memory tokenIds, uint256[] memory tokenIndexs) public{
         for (uint256 i = 0; i < tokenIds.length; i++) {
+            require(stakers[msg.sender].multiToken[tokenIds[i]].length != 0 ,"Nft Staking System: user has no nfts of this type staked");
+            require(tokenIndexs[i] < stakers[msg.sender].multiToken[tokenIds[i]].length ,"Nft Staking System: out of bounds token index");
             require(stakers[msg.sender].multiToken[tokenIds[i]][tokenIndexs[i]].amount != 0 ,"Nft Staking System: user must be the owner of the staked nft");
-             require(stakingUnlock < (block.timestamp - uint(stakers[msg.sender].multiToken[tokenIds[i]][tokenIndexs[i]].timestamp)), "Staked token cannot be unstaked as minimum period has not elapsed");
+            require(stakingUnlock < (block.timestamp - uint(stakers[msg.sender].multiToken[tokenIds[i]][tokenIndexs[i]].timestamp)), "Staked token cannot be unstaked as minimum period has not elapsed");
             _unstakeERC1155(tokenIds[i],tokenIndexs[i]);
         }
     }
@@ -205,41 +208,41 @@ contract StakingSystemRequired is AccessControl, ERC721Holder, ReentrancyGuard, 
         }
         // land.incrementTokenURI(_tokenId);
         land.safeTransferFrom(address(this), msg.sender, _tokenId);
-        emit Unstaked(msg.sender, _tokenId);
+        emit Unstaked721(msg.sender, _tokenId);
     }
 
     function _unstakeERC1155(uint256 _tokenId, uint256 _index) private nonReentrant  {
         // updateReward
-        ItemInfo[] storage tokens = stakers[msg.sender].multiToken[_tokenId];
-        ItemInfo memory item = tokens[_index];
-        uint256[] memory tokenIDs = stakers[msg.sender].ownedMultiTokens;
+        Staker storage staker = stakers[msg.sender];
+        ItemInfo memory item = staker.multiToken[_tokenId][_index];
         uint256 tokenAmount = item.amount;
         uint256 elapsedTime = block.timestamp - item.timestamp;               
         uint256 stakedPeriods = (block.timestamp - item.timestamp) / stakingPeriod;
-        uint256 rewards =   item.amount * token * stakedPeriods;
-        uint256 length = tokenIDs.length;
+        uint256 rewards =   (item.amount * token * stakedPeriods);
+        // claimReward
 
-        if(elapsedTime>stakingMinimum && tokensClaimable == true){ // claimReward
+        if(elapsedTime>stakingMinimum && tokensClaimable == true){ 
             rewardsToken.mint(msg.sender, rewards);
             emit RewardPaid(msg.sender, rewards);
             // CALL UPDATE TOKEN METADATA
         }
         // unstake
-        tokens[_index] = tokens[tokens.length-1] ; // remove from map of token => StakedTokenInfo[] 
-        tokens.pop();
-        
-        if(tokens.length == 0){ // remove from array of staked tokens
-            for(uint _j = 0; _j < length; _j++){
-                if(tokenIDs[_j] == _tokenId){
-                    stakers[msg.sender].ownedMultiTokens[_j] = tokenIDs[tokenIDs.length-1] ;
-                    stakers[msg.sender].ownedMultiTokens.pop();
+        // remove from map of token => StakedTokenInfo[] 
+        staker.multiToken[_tokenId][_index] = staker.multiToken[_tokenId][staker.multiToken[_tokenId].length-1] ;
+        staker.multiToken[_tokenId].pop();
+        // remove from array of staked tokens
+        if(staker.multiToken[_tokenId].length == 0){
+            for(uint _j = 0; _j < staker.ownedMultiTokens.length; _j++){
+                if(staker.ownedMultiTokens[_j] == _tokenId){
+                    staker.ownedMultiTokens[_j] = staker.ownedMultiTokens[staker.ownedMultiTokens.length-1] ;
+                    staker.ownedMultiTokens.pop();
                     break;
                 }  
             }
         }
     
         items.safeTransferFrom(address(this), msg.sender, _tokenId, tokenAmount, "0x00 ");
-        emit Unstaked(msg.sender, _tokenId, tokenAmount);
+        emit Unstaked1155(msg.sender, _tokenId, tokenAmount);
     }
 
 

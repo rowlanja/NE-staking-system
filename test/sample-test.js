@@ -84,49 +84,43 @@ describe("Testing Staking System", function () {
 
 
         
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Stake System Tests ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
-        console.log('balance : ', await landContract.balanceOf(accounts[0].address))
-        console.log('balance : ', await itemsContract.balanceOf(accounts[0].address, 0))
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Stake Owned ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
-        const stakeERC721 = await stakingContract.connect(accounts[0]).stakeERC721(1)
-        const stakeERC1155 = await stakingContract.connect(accounts[0]).stakeERC1155(0, 5)
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ GET STAKED ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
-          var getStakedErc721 = await stakingContract.GetStakedERC721(accounts[0].address,1)
-          console.log("Get Staked ERC721 | Expected 1 | Got : ", getStakedErc721.amount)
+      //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Stake System Tests ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+      console.log('balance : ', await landContract.balanceOf(accounts[0].address))
+      console.log('balance : ', await itemsContract.balanceOf(accounts[0].address, 0))
+      //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Stake Owned ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+      const stakeERC721 = await stakingContract.connect(accounts[0]).stakeERC721(1)
+      const stakeERC1155 = await stakingContract.connect(accounts[0]).stakeERC1155(0, 5)
+      //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ GET STAKED ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+      var getStakedErc721 = await stakingContract.GetStakedERC721(accounts[0].address,1)
+      var getStakedErc1155 = await stakingContract.GetStakedERC1155(accounts[0].address,0)
 
-          var getStakedErc1155 = await stakingContract.GetStakedERC1155(accounts[0].address,0)
-          console.log("Get Staked ERC1155 | Expected 5 | Got : ", getStakedErc1155[0].amount)
+      console.log("Get Staked ERC721 | Expected 1 | Got : ", getStakedErc721.amount)
+      console.log("Get Staked ERC1155 | Expected 5 | Got : ", getStakedErc1155[0].amount)
 
-                
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Stake NonExistant ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
-       
-        await expect(stakingContract.connect(accounts[0]).stakeERC721(50)).to.be.revertedWith('ERC721: owner query for nonexistent token')
-        await expect(stakingContract.connect(accounts[0]).stakeERC1155(10, 5)).to.be.revertedWith('Account have less token')
+              
+      //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Stake NonExistant ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+      
+      await expect(stakingContract.connect(accounts[0]).stakeERC721(50)).to.be.revertedWith('ERC721: owner query for nonexistent token')
+      await expect(stakingContract.connect(accounts[0]).stakeERC1155(10, 5)).to.be.revertedWith('Account have less token')
 
-  
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Stake Unowned ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
-        await expect(stakingContract.connect(accounts[1]).stakeERC721(0)).to.be.revertedWith('ERC721: owner query for nonexistent token')
-        await expect(stakingContract.connect(accounts[1]).stakeERC1155(0, 5)).to.be.revertedWith('Account have less token')
 
-  
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Staked Already Staked ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
-        await expect(stakingContract.connect(accounts[0]).stakeERC721(1)).to.be.revertedWith('Account doesnt own token')
-        await expect(stakingContract.connect(accounts[0]).stakeERC1155(0, 5)).to.be.revertedWith('Account have less token')
+      //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Stake Unowned ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+      await expect(stakingContract.connect(accounts[1]).stakeERC721(0)).to.be.revertedWith('ERC721: owner query for nonexistent token')
+      await expect(stakingContract.connect(accounts[1]).stakeERC1155(0, 5)).to.be.revertedWith('Account have less token')
+
+
+      //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Staked Already Staked ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+      await expect(stakingContract.connect(accounts[0]).stakeERC721(1)).to.be.revertedWith('Account doesnt own token')
+      await expect(stakingContract.connect(accounts[0]).stakeERC1155(0, 5)).to.be.revertedWith('Account have less token')
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Unstake Owned ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
-        try {
-          var unstakeErc721 = await stakingContract.connect(accounts[0]).unstakeERC721(1)
-          console.log("Unstake Owned ERC721 | Expected Result : True | Got : ", unstakeErc721.confirmations)
-        } catch (e) {
-          console.log("Unstake Owned ERC721 | Expected Result : True | Got : ", e)
-        }
-        try {
-          var unstakeErc1155 = await stakingContract.connect(accounts[0]).unstakeERC1155(0, 0)
-          console.log("Unstake Owned ERC1155 | Expected Result : True | Got : ",unstakeErc1155.confirmations)
-        } catch (e) {
-          console.log("Unstake Owned ERC1155 | Expected Result : True | Got : ",e)
-        }
-        
+
+        var unstakeErc721 = await stakingContract.connect(accounts[0]).unstakeERC721(1)
+        console.log("Unstake Owned ERC721 | Expected Result : True | Got : ", unstakeErc721.confirmations)
+
+        var unstakeErc1155 = await stakingContract.connect(accounts[0]).unstakeERC1155(0, 0)
+        console.log("Unstake Owned ERC1155 | Expected Result : True | Got : ",unstakeErc1155.confirmations)
+      
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Unstake Unowned ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
         await expect(stakingContract.connect(accounts[1]).unstakeERC721(10)).to.be.revertedWith('Nft Staking System: user must be the owner of the staked nft')
         await expect(stakingContract.connect(accounts[1]).unstakeERC1155(10, 1)).to.be.revertedWith('Nft Staking System: user has no nfts of this type staked')
@@ -137,20 +131,20 @@ describe("Testing Staking System", function () {
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ GET EMPTY STAKED ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
-          var getStakedErc721 = await stakingContract.GetStakedERC721(accounts[0].address, '1')
-          console.log("Get Staked ERC721 | Expected ItemInfo | Got : ", getStakedErc721.amount)
+        var getStakedErc721 = await stakingContract.GetStakedERC721(accounts[0].address, '1')
+        console.log("Get Staked ERC721 | Expected ItemInfo | Got : ", getStakedErc721.amount)
 
-          var getStakedErc1155 = await stakingContract.GetStakedERC1155(accounts[0].address, '0')
-          console.log("Get Staked ERC1155 | Expected ItemInfo | Got : ", getStakedErc1155)
+        var getStakedErc1155 = await stakingContract.GetStakedERC1155(accounts[0].address, '0')
+        console.log("Get Staked ERC1155 | Expected ItemInfo | Got : ", getStakedErc1155)
 
         
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ GET EMPTY STAKED ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
-          var getEmptyStakedErc721 = await stakingContract.GetStakedERC721(accounts[0].address, 10)
-          console.log("Empty staked ERC721 | Expected 0 | Got : ", getEmptyStakedErc721.amount)
+        var getEmptyStakedErc721 = await stakingContract.GetStakedERC721(accounts[0].address, 10)
+        console.log("Empty staked ERC721 | Expected 0 | Got : ", getEmptyStakedErc721.amount)
 
-          var getEmptyStakedErc1155 = await stakingContract.GetStakedERC1155(accounts[0].address, 10)
-          console.log("Empty staked ERC1155 | Expected [] | Got : ", getEmptyStakedErc1155)
+        var getEmptyStakedErc1155 = await stakingContract.GetStakedERC1155(accounts[0].address, 10)
+        console.log("Empty staked ERC1155 | Expected [] | Got : ", getEmptyStakedErc1155)
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Batch Stake Owned ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
         var batchStakedErc721 = await stakingContract.connect(accounts[0]).batchStakeERC721([1,2])
@@ -168,7 +162,7 @@ describe("Testing Staking System", function () {
         
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Batch Stake Already Staked ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
         await expect(stakingContract.connect(accounts[0]).batchStakeERC721([1,2])).to.be.revertedWith('Account doesnt own token')        
-          await expect(stakingContract.connect(accounts[0]).batchStakeERC1155([0,1,2],[5,5,5])).to.be.revertedWith('Account have less token')        
+        await expect(stakingContract.connect(accounts[0]).batchStakeERC1155([0,1,2],[5,5,5])).to.be.revertedWith('Account have less token')        
         
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Batch Unstake Owned ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
         var batchUnstakeErc721 = await stakingContract.connect(accounts[0]).batchUnstakeERC721(['1','2'])

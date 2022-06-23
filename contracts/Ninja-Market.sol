@@ -2,20 +2,20 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-
+import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
 import "hardhat/console.sol";
 
-contract Marketplace is ReentrancyGuard {
+contract Marketplace is AccessControl, ReentrancyGuard {
+    IERC721 public nft;
 
-    // Variables
-    address payable public immutable feeAccount; // the account that receives fees
-    uint public immutable feePercent; // the fee percentage on sales 
-    uint public itemCount; 
+    // Variabless
+    address payable public feeAccount; // the account that receives fees
+    uint public feePercent; // the fee percentage on sales 
 
     struct Item {
-        IERC721 nft;
         uint index;
         uint price;
         address payable seller;
@@ -46,19 +46,19 @@ contract Marketplace is ReentrancyGuard {
         address indexed buyer
     );
 
-    constructor(uint _feePercent) {
+    constructor(IERC721 _nft, uint _feePercent) {
         feeAccount = payable(msg.sender);
         feePercent = _feePercent;
+        nft = _nft;
     }
 
     // Make item to offer on the marketplace
-    function listItem(IERC721 _nft, uint _tokenId, uint _price) external nonReentrant {
+    function listItem(uint _tokenId, uint _price) external nonReentrant {
         // require(_price > 0, "Price must be greater than zero");
         // transfer nft
-        _nft.transferFrom(msg.sender, address(this), _tokenId);
+        nft.transferFrom(msg.sender, address(this), _tokenId);
         // add new item to items mapping
         items[_tokenId] = Item (
-            _nft,
             itemIds.length,
             _price,
             payable(msg.sender),
@@ -67,7 +67,7 @@ contract Marketplace is ReentrancyGuard {
         itemIds.push(_tokenId);
         // emit Offered event
         emit Offered(
-            address(_nft),
+            address(nft),
             _tokenId,
             _price,
             msg.sender
@@ -80,7 +80,7 @@ contract Marketplace is ReentrancyGuard {
 
         Item memory item = items[_tokenId];
 
-        item.nft.transferFrom(address(this), msg.sender, _tokenId);
+        nft.transferFrom(address(this), msg.sender, _tokenId);
         //remove itemID from listed itemID list
         itemIds[item.index] = itemIds[itemIds.length-1];
         // remove itemId
@@ -107,7 +107,7 @@ contract Marketplace is ReentrancyGuard {
         // update item to sold
         // item.sold = true;
         // transfer nft to buyer
-        item.nft.transferFrom(address(this), msg.sender, _tokenId);
+        nft.transferFrom(address(this), msg.sender, _tokenId);
 
         //remove itemID from listed itemID list
         itemIds[item.index] = itemIds[itemIds.length-1];
@@ -120,13 +120,24 @@ contract Marketplace is ReentrancyGuard {
         // emit Bought event
         emit Bought(
             _tokenId,
-            address(item.nft),
+            address(nft),
             _tokenId,
             item.price,
             item.seller,
             msg.sender
         );
     }
+
+    
+    function setFeeAccount(address payable _addr) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        feeAccount = _addr;
+    }
+
+    function setFeePercent(uint256 _feePercent) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        feePercent = _feePercent;
+    }
+
+
     function getTotalPrice(uint _itemId) view public returns(uint){
         return((items[_itemId].price*(100 + feePercent))/100);
     }
