@@ -19,7 +19,7 @@ contract StakingSystemRequired is AccessControl, ERC721Holder, ReentrancyGuard, 
     IERC721 public land;
     IERC1155 public items;
 
-    uint256 public stakingPeriod = 1 minutes;
+    uint256 public stakingPeriod = 1 seconds;
     uint256 public stakingMinimum = 0 days;
     uint256 public stakingUnlock = 0 days;
     uint256 constant token = 10e18;
