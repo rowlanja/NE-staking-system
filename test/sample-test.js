@@ -1,7 +1,6 @@
-const Greeter = artifacts.require("Greeter");
 const ERC20_Reward_Token = artifacts.require("Dojo");
-const ERC721_Staking_Token = artifacts.require("contracts/Ninja-NFT.sol:NFTContract");
-const ERC1155_Staking_Token = artifacts.require("contracts/Staking-ERC1155.sol:Items");
+const ERC721_Staking_Token = artifacts.require("contracts/Ninja-NFT-(ForTesting).sol:NFTContract");
+const ERC1155_Staking_Token = artifacts.require("contracts/Staking-ERC1155-(ForTesting).sol:Items");
 const Staking_system = artifacts.require("contracts/Staking-System-Optimized.sol:StakingSystemRequired");
 const { ethers } = require("hardhat");
 const { expect } = require("chai");
@@ -17,8 +16,8 @@ describe("Testing Staking System", function () {
   before(async function () {
 
     const ERC20_Reward_Token = await ethers.getContractFactory("Dojo");
-    const ERC721_Staking_Token = await ethers.getContractFactory("contracts/Ninja-NFT.sol:NFTContract");
-    const ERC1155_Staking_Token = await ethers.getContractFactory("contracts/Staking-ERC1155.sol:Items");
+    const ERC721_Staking_Token = await ethers.getContractFactory("contracts/Ninja-NFT-(ForTesting).sol:NFTContract");
+    const ERC1155_Staking_Token = await ethers.getContractFactory("contracts/Staking-ERC1155-(ForTesting).sol:Items");
     const Staking_system = await ethers.getContractFactory("contracts/Staking-System-Optimized.sol:StakingSystemRequired");
 
 
@@ -150,8 +149,8 @@ describe("Testing Staking System", function () {
   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Unstake Owned ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
   describe("Unstake Owned ERC 721 & ERC 1155", function () {
     it("Should successfully unstake Owned tokens", async function () {
-      console.log(await stakingContract.GetStakedERC721(accounts[0].address, 1))
-      console.log(await stakingContract.GetStakedERC1155(accounts[0].address, 0))
+      // console.log(await stakingContract.GetStakedERC721(accounts[0].address, 1))
+      // console.log(await stakingContract.GetStakedERC1155(accounts[0].address, 0))
 
 
 
