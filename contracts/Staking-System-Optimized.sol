@@ -29,7 +29,7 @@ contract StakingSystemRequired is AccessControl, ERC721Holder, ReentrancyGuard, 
     
 
     struct ItemInfo {
-        uint256 amount;
+        uint16 amount;
         uint256 timestamp;
     }
     
@@ -39,7 +39,7 @@ contract StakingSystemRequired is AccessControl, ERC721Holder, ReentrancyGuard, 
 
         uint256[] ownedMultiTokens;
         uint256[] ownedTokens;
-        uint8 claimReward;
+        bool claimed;
     }
 
     constructor(IERC721 _land, IERC1155 _items, IRewardToken _rewardsToken) {
@@ -54,11 +54,11 @@ contract StakingSystemRequired is AccessControl, ERC721Holder, ReentrancyGuard, 
 
     /// @notice event emitted when a user has staked a nft
     event Staked721(address owner, uint256 id);
-    event Staked1155(address owner, uint256 id, uint256 amount);
+    event Staked1155(address owner, uint256 id, uint16 amount);
 
     /// @notice event emitted when a user has unstaked a nft
     event Unstaked721(address owner, uint256 id);
-    event Unstaked1155(address owner, uint256 id, uint256 amount);
+    event Unstaked1155(address owner, uint256 id, uint16 amount);
 
     /// @notice event emitted when a user claims reward
     event RewardPaid(address indexed user, uint256 reward);
@@ -109,7 +109,7 @@ contract StakingSystemRequired is AccessControl, ERC721Holder, ReentrancyGuard, 
     }
 
     
-    function stakeERC1155(uint256 tokenId, uint256 tokenAmount ) public  {
+    function stakeERC1155(uint256 tokenId, uint16  tokenAmount ) public  {
         require(initialised, "Staking System: the staking has not started");
         require(items.balanceOf(msg.sender, tokenId) > 0, "Account have less token");
         _stakeERC1155(msg.sender, tokenId, tokenAmount);
@@ -123,7 +123,7 @@ contract StakingSystemRequired is AccessControl, ERC721Holder, ReentrancyGuard, 
         }
     }
 
-    function batchStakeERC1155(uint256[] memory tokenIds, uint256[] memory tokenAmounts) public {
+    function batchStakeERC1155(uint256[] memory tokenIds, uint16[] memory tokenAmounts) public {
         require(initialised, "Staking System: the staking has not started");
         for (uint256 i = 0; i < tokenIds.length; i++) {
             require(items.balanceOf(msg.sender, tokenIds[i]) > 0, "Account have less token");
@@ -142,7 +142,7 @@ contract StakingSystemRequired is AccessControl, ERC721Holder, ReentrancyGuard, 
         emit Staked721(_user, _tokenId);
     }
 
-    function _stakeERC1155(address _user, uint256 _tokenId, uint256 _tokenAmount) private nonReentrant {
+    function _stakeERC1155(address _user, uint256 _tokenId, uint16  _tokenAmount) private nonReentrant {
         items.safeTransferFrom(_user, address(this), _tokenId, _tokenAmount, "");
         Staker storage staker = stakers[_user];
         ItemInfo memory info = ItemInfo(_tokenAmount,block.timestamp);
@@ -161,8 +161,10 @@ contract StakingSystemRequired is AccessControl, ERC721Holder, ReentrancyGuard, 
     function unstakeERC1155(uint256 tokenId, uint256 tokenIndex) public{
         require(stakers[msg.sender].multiToken[tokenId].length != 0 ,"Nft Staking System: user has no nfts of this type staked");
         require(stakers[msg.sender].multiToken[tokenId][tokenIndex].amount != 0 ,"Nft Staking System: user must be the owner of the staked nft");
-        require(stakingUnlock < (block.timestamp - uint(stakers[msg.sender].multiToken[tokenId][tokenIndex].timestamp)), "Staked token cannot be unstaked as minimum period has not elapsed");
-        _unstakeERC1155(tokenId,tokenIndex);
+
+        uint256 elapsedTime = block.timestamp - uint(stakers[msg.sender].multiToken[tokenId][tokenIndex].timestamp);
+        require(stakingUnlock < elapsedTime, "Staked token cannot be unstaked as minimum period has not elapsed");
+        _unstakeERC1155(tokenId,tokenIndex,elapsedTime);
     }
 
     function batchUnstakeERC721(uint256[] memory tokenIds) public{
@@ -178,8 +180,10 @@ contract StakingSystemRequired is AccessControl, ERC721Holder, ReentrancyGuard, 
             require(stakers[msg.sender].multiToken[tokenIds[i]].length != 0 ,"Nft Staking System: user has no nfts of this type staked");
             require(tokenIndexs[i] < stakers[msg.sender].multiToken[tokenIds[i]].length ,"Nft Staking System: out of bounds token index");
             require(stakers[msg.sender].multiToken[tokenIds[i]][tokenIndexs[i]].amount != 0 ,"Nft Staking System: user must be the owner of the staked nft");
-            require(stakingUnlock < (block.timestamp - uint(stakers[msg.sender].multiToken[tokenIds[i]][tokenIndexs[i]].timestamp)), "Staked token cannot be unstaked as minimum period has not elapsed");
-            _unstakeERC1155(tokenIds[i],tokenIndexs[i]);
+            
+            uint256 elapsedTime = block.timestamp - uint(stakers[msg.sender].multiToken[tokenIds[i]][tokenIndexs[i]].timestamp);
+            require(stakingUnlock < elapsedTime, "Staked token cannot be unstaked as minimum period has not elapsed");
+            _unstakeERC1155(tokenIds[i],tokenIndexs[i], elapsedTime);
         }
     }
 
@@ -188,40 +192,39 @@ contract StakingSystemRequired is AccessControl, ERC721Holder, ReentrancyGuard, 
         Staker storage staker = stakers[msg.sender];
         uint256[] memory ownedTokens =  staker.ownedTokens;
         uint256 elapsedTime = block.timestamp - staker.token[_tokenId].timestamp;
-        uint256 stakedPeriods = elapsedTime / stakingPeriod;
-        uint256 rewards =  token * stakedPeriods;
-        uint256 length = ownedTokens.length;
+        
         // claimReward;        
         if(elapsedTime>stakingMinimum && tokensClaimable == true){ 
+            uint256 stakedPeriods = (elapsedTime) / stakingPeriod;
+            uint256 rewards =  token * stakedPeriods;
             rewardsToken.mint(msg.sender, rewards);
             emit RewardPaid(msg.sender, rewards);
             // CALL UPDATE TOKEN METADATA
         }
         // unstake
         delete staker.token[_tokenId];
-        for(uint _j = 0; _j < length; _j++){
+        for(uint _j = 0; _j <  ownedTokens.length; _j++){
             if(ownedTokens[_j] == _tokenId){
-                staker.ownedTokens[_j] = ownedTokens[ownedTokens.length-1] ;
-                staker.ownedTokens.pop();
+                ownedTokens[_j] = ownedTokens[ownedTokens.length-1] ;
+                delete ownedTokens[ownedTokens.length-1];
                 break;
             }  
         }
+        staker.ownedTokens = ownedTokens;
         // land.incrementTokenURI(_tokenId);
         land.safeTransferFrom(address(this), msg.sender, _tokenId);
         emit Unstaked721(msg.sender, _tokenId);
     }
 
-    function _unstakeERC1155(uint256 _tokenId, uint256 _index) private nonReentrant  {
+    function _unstakeERC1155(uint256 _tokenId, uint256 _index, uint256 _elapsedTime) private nonReentrant  {
         // updateReward
         Staker storage staker = stakers[msg.sender];
         ItemInfo memory item = staker.multiToken[_tokenId][_index];
-        uint256 tokenAmount = item.amount;
-        uint256 elapsedTime = block.timestamp - item.timestamp;               
-        uint256 stakedPeriods = (block.timestamp - item.timestamp) / stakingPeriod;
-        uint256 rewards =   (item.amount * token * stakedPeriods);
-        // claimReward
-
-        if(elapsedTime>stakingMinimum && tokensClaimable == true){ 
+        uint16  tokenAmount = item.amount;
+        
+        if(_elapsedTime>stakingMinimum && tokensClaimable == true){ 
+            uint256 stakedPeriods = (block.timestamp - item.timestamp) / stakingPeriod;
+            uint256 rewards =   (item.amount * token * stakedPeriods);
             rewardsToken.mint(msg.sender, rewards);
             emit RewardPaid(msg.sender, rewards);
             // CALL UPDATE TOKEN METADATA

@@ -150,6 +150,11 @@ describe("Testing Staking System", function () {
   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Unstake Owned ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
   describe("Unstake Owned ERC 721 & ERC 1155", function () {
     it("Should successfully unstake Owned tokens", async function () {
+      console.log(await stakingContract.GetStakedERC721(accounts[0].address, 1))
+      console.log(await stakingContract.GetStakedERC1155(accounts[0].address, 0))
+
+
+
       var getStakedErc721 = await stakingContract.GetStakedERC721(accounts[0].address, 1)
       var getStakedErc1155 = await stakingContract.GetStakedERC1155(accounts[0].address, 0)
       var getDojoBalance = await dojoContract.balanceOf(accounts[0].address);
@@ -322,12 +327,12 @@ describe("Testing Staking System", function () {
       var getStakedErc721A = await stakingContract.GetStakedERC721(accounts[0].address, 1)
       var getStakedErc721B = await stakingContract.GetStakedERC721(accounts[0].address, 2)
       var getStakedErc1155A = await stakingContract.GetStakedERC1155(accounts[0].address, 0)
-      var getStakedErc1155B = await stakingContract.GetStakedERC1155(accounts[0].address, 0)
+      var getStakedErc1155B = await stakingContract.GetStakedERC1155(accounts[0].address, 2)
       expect(getStakedErc721A.amount).to.equal(1);
       expect(getStakedErc721B.amount).to.equal(1);
       expect(getStakedErc1155A[0].amount).to.equal(5);
       expect(getStakedErc1155B[0].amount).to.equal(5);
-      
+
       var erc271Balance =  await landContract.balanceOf(accounts[0].address)
       var erc1155ABalance =  await itemsContract.balanceOf(accounts[0].address, 0)
       var erc1155BBalance =  await itemsContract.balanceOf(accounts[0].address, 2)
@@ -336,7 +341,7 @@ describe("Testing Staking System", function () {
       expect(erc271Balance).to.equal(12);
 
       await stakingContract.connect(accounts[0]).batchUnstakeERC721([1, 2])
-      await stakingContract.connect(accounts[0]).batchUnstakeERC1155([0, 2], [0, 0, 0])
+      await stakingContract.connect(accounts[0]).batchUnstakeERC1155([0, 2], [0, 0])
       
       var getStakedErc721A = await stakingContract.GetStakedERC721(accounts[0].address, 1)
       var getStakedErc721B = await stakingContract.GetStakedERC721(accounts[0].address, 2)

@@ -33,8 +33,10 @@ module.exports = {
     },
   },
   gasReporter: {
-    enabled: process.env.REPORT_GAS !== undefined,
+    enabled: true,
     currency: "USD",
+    outputFile: "./gas_history/gas4.txt",
+    noColors:true,
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
