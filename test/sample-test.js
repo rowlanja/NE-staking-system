@@ -44,7 +44,7 @@ describe("Testing Staking System", function () {
     await landContract.mint(accounts[0].address, 5)
     await landContract.mint(accounts[0].address, 5)
     await landContract.mint(accounts[0].address, 5)
-    await itemsContract.mintBatch(accounts[0].address, [0, 1, 2], [5, 5, 5], [])
+    await itemsContract.mintBatch(accounts[0].address, [0, 1, 2, 3], [5, 5, 5, 15], [])
 
     await stakingContract.connect(accounts[0]).stakeERC721(1)
     await stakingContract.connect(accounts[0]).stakeERC1155(0, 5)
@@ -75,6 +75,28 @@ describe("Testing Staking System", function () {
 
     });
   });
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Stake Multiple ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+    describe("Stake Multiple ERC 1155", function () {
+      it("Should successfully stake same token multiple times", async function () {
+        expect(await itemsContract.balanceOf(accounts[0].address, 3)).to.equal(15);
+  
+        await stakingContract.connect(accounts[0]).stakeERC1155(3, 1)
+        await stakingContract.connect(accounts[0]).stakeERC1155(3, 2)
+        await stakingContract.connect(accounts[0]).stakeERC1155(3, 3)
+  
+        var getStakedErc1155 = await stakingContract.GetStakedERC1155(accounts[0].address, 3)
+        console.log(getStakedErc1155)
+
+        expect(getStakedErc1155[0].amount).to.equal(1);
+        expect(getStakedErc1155[1].amount).to.equal(2);
+        expect(getStakedErc1155[2].amount).to.equal(3);
+        expect(getStakedErc1155.length).to.equal(3);
+        expect(await itemsContract.balanceOf(accounts[0].address, 3)).to.equal(9);
+
+  
+      });
+    });
 
   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Stake NonExistant ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
   describe("Stake NonExistant ERC 721 & ERC 1155", function () {
@@ -174,6 +196,29 @@ describe("Testing Staking System", function () {
 
     });
   });
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Unstake Multiple ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+    describe("Stake Multiple ERC 1155", function () {
+      it("Should successfully stake same token multiple times", async function () {
+        expect(await itemsContract.balanceOf(accounts[0].address, 3)).to.equal(9);
+  
+        await stakingContract.connect(accounts[0]).unstakeERC1155(3, 0)
+        var getStakedErc1155 = await stakingContract.GetStakedERC1155(accounts[0].address, 3)
+        expect(getStakedErc1155[0].amount).to.equal(3);
+        expect(getStakedErc1155[1].amount).to.equal(2);
+
+        await stakingContract.connect(accounts[0]).unstakeERC1155(3, 0)
+        var getStakedErc1155 = await stakingContract.GetStakedERC1155(accounts[0].address, 3)
+        expect(getStakedErc1155[0].amount).to.equal(2);
+
+        await stakingContract.connect(accounts[0]).unstakeERC1155(3, 0)
+        var getStakedErc1155 = await stakingContract.GetStakedERC1155(accounts[0].address, 3)
+        expect(getStakedErc1155.length).to.equal(0);
+
+        expect(await itemsContract.balanceOf(accounts[0].address, 3)).to.equal(15);
+      });
+    });
+  
 
   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Unstake Nonexistant ERC 721 & ERC 1155 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
   describe("Unstake Nonexistant ERC 721 & ERC 1155", function () {
