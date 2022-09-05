@@ -190,7 +190,6 @@ contract StakingSystemRequired is AccessControl, ERC721Holder, ReentrancyGuard, 
     function _unstakeERC721(uint256 _tokenId) private nonReentrant  {
         // updateReward
         Staker storage staker = stakers[msg.sender];
-        uint256[] memory ownedTokens =  staker.ownedTokens;
         uint256 elapsedTime = block.timestamp - staker.token[_tokenId].timestamp;
         
         // claimReward;        
@@ -203,14 +202,14 @@ contract StakingSystemRequired is AccessControl, ERC721Holder, ReentrancyGuard, 
         }
         // unstake
         delete staker.token[_tokenId];
-        for(uint _j = 0; _j <  ownedTokens.length; _j++){
-            if(ownedTokens[_j] == _tokenId){
-                ownedTokens[_j] = ownedTokens[ownedTokens.length-1] ;
-                delete ownedTokens[ownedTokens.length-1];
+        for(uint _j = 0; _j <  staker.ownedTokens.length; _j++){
+            if(staker.ownedTokens[_j] == _tokenId){
+                staker.ownedTokens[_j] = staker.ownedTokens[staker.ownedTokens.length-1];
+                staker.ownedTokens.pop();
                 break;
             }  
         }
-        staker.ownedTokens = ownedTokens;
+
         // land.incrementTokenURI(_tokenId);
         land.safeTransferFrom(address(this), msg.sender, _tokenId);
         emit Unstaked721(msg.sender, _tokenId);
