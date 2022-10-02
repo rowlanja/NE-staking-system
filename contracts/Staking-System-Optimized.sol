@@ -111,6 +111,7 @@ contract StakingSystemRequired is AccessControl, ERC721Holder, ReentrancyGuard, 
     
     function stakeERC1155(uint256 tokenId, uint16  tokenAmount ) public  {
         require(initialised, "Staking System: the staking has not started");
+        require(tokenAmount > 0, "Min amount 1");
         require(items.balanceOf(msg.sender, tokenId) > 0, "Account have less token");
         _stakeERC1155(msg.sender, tokenId, tokenAmount);
     }
